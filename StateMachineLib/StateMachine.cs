@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace StateMachineLib
 {
@@ -20,17 +21,69 @@ namespace StateMachineLib
 
         public StateMachineInfo<TTrig, TName> StateMachineInfo { get; }
 
-        public State<TTrig, TName> Next(TTrig triggerValue)
+        public State<TTrig, TName>? Next(TTrig triggerValue)
         {
-            var nextState = CurrentState.Next(triggerValue);
+            State<TTrig, TName>? nextState = null;
+            if(CurrentState.IsAsyncState)
+            {
+                nextState = CurrentState.NextAsync(triggerValue).ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            else
+            {
+                nextState = CurrentState.Next(triggerValue);
+            }
+
             if (nextState == null)
             {
                 return null;
             }
+
             PreviousState = CurrentState;
             CurrentState = nextState;
             OnStateChanged?.Invoke(PreviousState, CurrentState);
-            CurrentState.Activate(triggerValue);
+
+
+            if (CurrentState.IsAsyncState)
+            {
+                CurrentState.ActivateAsync(triggerValue).ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            else
+            {
+                CurrentState.Activate(triggerValue);
+            }
+
+
+            return CurrentState;
+        }
+
+        public async Task<State<TTrig, TName>?> NextAsync(TTrig triggerValue)
+        {
+            State<TTrig, TName>? nextState = null;
+            if (CurrentState.IsAsyncState)
+            {
+                nextState = await CurrentState.NextAsync(triggerValue);
+            }
+            else
+            {
+                nextState = CurrentState.Next(triggerValue);
+            }
+
+            if (nextState == null)
+            {
+                return null;
+            }
+
+            PreviousState = CurrentState;
+            CurrentState = nextState;
+            OnStateChanged?.Invoke(PreviousState, CurrentState);
+            if (CurrentState.IsAsyncState)
+            {
+                await CurrentState.ActivateAsync(triggerValue);
+            }
+            else
+            {
+                CurrentState.Activate(triggerValue);
+            }
             return CurrentState;
         }
 

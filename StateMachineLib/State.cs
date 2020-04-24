@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace StateMachineLib
 {
@@ -7,26 +8,33 @@ namespace StateMachineLib
     {
         private State<TTrig, TName> _allTransition = null;
         private readonly Dictionary<TTrig, State<TTrig, TName>> _transitions = new Dictionary<TTrig, State<TTrig, TName>>();
+        public bool IsAsyncState { get; private set; }
         public event Action<TTrig> OnEnter;
         public event Action<TTrig> OnExit;
-        public TName Name { get; set; }
-        public bool Ignoring { get; set; }
+        public event Func<TTrig, Task> OnEnterAsync;
+        public event Func<TTrig, Task> OnExitAsync;
+        public TName Name { get; internal set; }
+        public bool Ignoring { get; internal set; }
 
-        public State()
+        internal State()
         {
-        }
-
-        public State(Action<TTrig> onEnter, Action<TTrig> onExit = null)
-        {
-            OnEnter += onEnter;
-            OnExit += onExit;
         }
 
         public IReadOnlyDictionary<TTrig, State<TTrig, TName>> Transitions => _transitions;
 
+        internal void OnBuild()
+        {
+            IsAsyncState = OnEnterAsync != null;
+        }
+
         public void Activate(TTrig value)
         {
             OnEnter?.Invoke(value);
+        }
+
+        public Task ActivateAsync(TTrig value)
+        {
+            return OnEnterAsync?.Invoke(value);
         }
 
         public void AddTransition(TTrig triggerValue, State<TTrig, TName> targetState)
@@ -39,9 +47,16 @@ namespace StateMachineLib
             _allTransition = targetState;
         }
 
-        public virtual State<TTrig, TName> Next(TTrig trigValue)
+        public virtual State<TTrig, TName>? Next(TTrig trigValue)
         {
-            OnExit?.Invoke(trigValue);
+            if (OnExitAsync != null)
+            {
+                OnExitAsync.Invoke(trigValue).ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            else
+            {
+                OnExit?.Invoke(trigValue);
+            }
             _transitions.TryGetValue(trigValue, out var state);
             if (state == null)
             {
@@ -49,15 +64,42 @@ namespace StateMachineLib
                 {
                     return _allTransition;
                 }
-                else if (Ignoring)
+
+                if (Ignoring)
                 {
                     return null;
                 }
-                else
+                throw new KeyNotFoundException(
+                    $"Cannot find tranistion with key {trigValue} from current state {Name}");
+            }
+
+            return state;
+        }
+
+        public virtual async Task<State<TTrig, TName>?> NextAsync(TTrig trigValue)
+        {
+            if (OnExitAsync != null)
+            {
+                await OnExitAsync.Invoke(trigValue);
+            }
+            else
+            {
+                OnExit?.Invoke(trigValue);
+            }
+            _transitions.TryGetValue(trigValue, out var state);
+            if (state == null)
+            {
+                if (_allTransition != null)
                 {
-                    throw new KeyNotFoundException(
-                        $"Cannot find tranistion with key {trigValue} from current state {Name}");
+                    return _allTransition;
                 }
+
+                if (Ignoring)
+                {
+                    return null;
+                }
+                throw new KeyNotFoundException(
+                    $"Cannot find tranistion with key {trigValue} from current state {Name}");
             }
 
             return state;

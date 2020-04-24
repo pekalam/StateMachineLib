@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 
 namespace StateMachineLib
 {
@@ -51,8 +52,7 @@ namespace StateMachineLib
 
             foreach (var intStateArgs in _intStateArgs)
             {
-                var intState = new InterruptState<TTrig, TName>(_stateMachine, intStateArgs.StateAction,
-                    intStateArgs.StateName);
+                var intState = new InterruptState<TTrig, TName>(_stateMachine, intStateArgs);
                 foreach (var state in _createdStates.Values)
                 {
                     state.AddTransition(intStateArgs.TriggerValue, intState);
@@ -62,7 +62,9 @@ namespace StateMachineLib
             foreach (var arg in _resetIntStateArgs)
             {
                 var resetIntState = new ResetInterruptState<TTrig, TName>(_stateMachine, arg,
-                    _createdStates.Where(kv => kv.Key.Equals(arg.ResetStateName)).Select(kv => kv.Value).First());
+                    _createdStates
+                        .Where(kv => kv.Key.Equals(arg.ResetStateName))
+                        .Select(kv => kv.Value).First());
                 foreach (var state in _createdStates.Values)
                 {
                     state.AddTransition(arg.TriggerValue, resetIntState);
@@ -98,6 +100,34 @@ namespace StateMachineLib
             return this;
         }
 
+
+        public StateMachineBuilder<TTrig, TName> AsyncInterruptState(TTrig triggerValue, Func<TTrig, Task> action,
+            TName stateName)
+        {
+            _intStateArgs.Add(new InterruptStateBuildArgs<TTrig, TName>()
+            {
+                AsyncStateAction = action,
+                StateName = stateName,
+                TriggerValue = triggerValue
+            });
+            return this;
+        }
+
+
+        public StateMachineBuilder<TTrig, TName> AsyncResetInterruptState(TTrig triggerValue, Func<TTrig, Task> action,
+            TName stateName, TName resetState)
+        {
+            _resetIntStateArgs.Add(new ResetInterruptStateBuildArgs<TTrig, TName>()
+            {
+                AsyncStateAction = action,
+                StateName = stateName,
+                TriggerValue = triggerValue,
+                ResetStateName = resetState,
+            });
+            return this;
+        }
+
+
         public class StateBuilder
         {
             private readonly StateMachineBuilder<TTrig, TName> _parentBuilder;
@@ -116,9 +146,21 @@ namespace StateMachineLib
                 return this;
             }
 
+            public StateBuilder EnterAsync(Func<TTrig, Task> action)
+            {
+                _state.OnEnterAsync += action;
+                return this;
+            }
+
             public StateBuilder Exit(Action<TTrig> action)
             {
                 _state.OnExit += action;
+                return this;
+            }
+
+            public StateBuilder ExitAsync(Func<TTrig, Task> action)
+            {
+                _state.OnExitAsync += action;
                 return this;
             }
 
@@ -146,6 +188,7 @@ namespace StateMachineLib
 
             public StateMachineBuilder<TTrig, TName> End()
             {
+                _state.OnBuild();
                 return _parentBuilder;
             }
         }
