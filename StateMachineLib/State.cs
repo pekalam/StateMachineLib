@@ -7,7 +7,7 @@ namespace StateMachineLib
     public class State<TTrig, TName>
     {
         private State<TTrig, TName> _allTransition = null;
-        private readonly Dictionary<TTrig, State<TTrig, TName>> _transitions = new Dictionary<TTrig, State<TTrig, TName>>();
+        protected readonly Dictionary<TTrig, State<TTrig, TName>> _transitions = new Dictionary<TTrig, State<TTrig, TName>>();
         public bool IsAsyncState { get; private set; }
         public event Action<TTrig> OnEnter;
         public event Action<TTrig> OnExit;

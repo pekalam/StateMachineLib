@@ -3,18 +3,20 @@ using System.Threading.Tasks;
 
 namespace StateMachineLib
 {
-    class ResetInterruptState<TTrig, TName> : State<TTrig, TName>
+    class HoldingGlobState<TTrig, TName> : State<TTrig, TName>
     {
         private readonly StateMachine<TTrig, TName> _stateMachine;
-        private readonly Action<TTrig> _action;
-        private readonly Func<TTrig, Task> _asyncAction;
-        private readonly State<TTrig, TName> _resetState;
+        private readonly Action<TTrig>? _action;
+        private readonly Func<TTrig, Task>? _asyncAction;
+        private readonly TTrig _returnTrig;
 
-        public ResetInterruptState(StateMachine<TTrig, TName> stateMachine, ResetInterruptStateBuildArgs<TTrig, TName> args, State<TTrig, TName> resetState)
+        public HoldingGlobState(StateMachine<TTrig, TName> stateMachine, HoldingGlobStateBuildArgs<TTrig, TName> args)
         {
-            Name = args.StateName;
             _stateMachine = stateMachine;
-            _resetState = resetState;
+            _returnTrig = args.ReturnTrigger;
+            Name = args.StateName;
+            Ignoring = true;
+            
 
             if (args.StateAction != null)
             {
@@ -32,14 +34,16 @@ namespace StateMachineLib
 
         private async Task OnAsyncInterruptStateEnter(TTrig arg)
         {
+            _transitions.Remove(_returnTrig);
+            AddTransition(_returnTrig, _stateMachine.PreviousState);
             await _asyncAction.Invoke(arg);
-            _stateMachine.Restore(_resetState);
         }
 
         private void OnInterruptStateEnter(TTrig triggerValue)
         {
+            _transitions.Remove(_returnTrig);
+            AddTransition(_returnTrig, _stateMachine.PreviousState);
             _action.Invoke(triggerValue);
-            _stateMachine.Restore(_resetState);
         }
     }
 }

@@ -138,7 +138,8 @@ namespace Tests
     {
         T1,
         T2,
-        T3
+        T3,
+        RET
     }
 
     enum States
@@ -259,6 +260,51 @@ namespace Tests
             i1Called.ShouldBe(2);
             i2Called.ShouldBe(2);
             TestStateMachineContext<TrigType, States>.GetStateTimesCalled(States.S1).ShouldBe(0);
+        }
+
+        [Fact]
+        public async Task HoldingGlobState()
+        {
+            int i1Called = 0;
+            int i2Called = 0;
+
+            var sm = new StateMachineBuilder<TrigType, States>()
+                .CreateTestState(States.S1)
+                .End()
+                .AsyncHoldingGlobState(TrigType.T2, _ =>
+                {
+                    i2Called++;
+                    return Task.CompletedTask;
+                }, States.INTER2, TrigType.RET)
+                .HoldingGlobState(TrigType.T1, _ => i1Called++, States.INTER1, TrigType.RET)
+                .Build(States.S1);
+
+
+            sm.Next(TrigType.T1);
+            sm.CurrentState.Name.ShouldBe(States.INTER1);
+
+            await sm.NextAsync(TrigType.T1);
+            sm.CurrentState.Name.ShouldBe(States.INTER1);
+            sm.Next(TrigType.T2);
+            sm.CurrentState.Name.ShouldBe(States.INTER1);
+
+            sm.Next(TrigType.RET);
+            sm.CurrentState.Name.ShouldBe(States.S1);
+
+            await sm.NextAsync(TrigType.T2);
+            sm.CurrentState.Name.ShouldBe(States.INTER2);
+
+            await sm.NextAsync(TrigType.T1);
+            sm.CurrentState.Name.ShouldBe(States.INTER2);
+            sm.Next(TrigType.T2);
+            sm.CurrentState.Name.ShouldBe(States.INTER2);
+
+            await sm.NextAsync(TrigType.RET);
+            sm.CurrentState.Name.ShouldBe(States.S1);
+
+            i1Called.ShouldBe(1);
+            i2Called.ShouldBe(1);
+            TestStateMachineContext<TrigType, States>.GetStateTimesCalled(States.S1).ShouldBe(2);
         }
 
         [Fact]

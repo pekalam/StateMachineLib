@@ -36,7 +36,8 @@
                 }
 
                 if (ignoreInterruptStates && (state.GetType() == typeof(InterruptState<TTrig, TName>) ||
-                                              state.GetType() == typeof(ResetInterruptState<TTrig, TName>)))
+                                              state.GetType() == typeof(ResetInterruptState<TTrig, TName>) ||
+                                              state.GetType() == typeof(HoldingGlobState<TTrig, TName>)))
                 {
                     continue;
                 }
@@ -45,7 +46,8 @@
                 {
                     if (ignoreInterruptStates &&
                         (transition.Value.GetType() == typeof(InterruptState<TTrig, TName>) || 
-                         transition.Value.GetType() == typeof(ResetInterruptState<TTrig, TName>)))
+                         transition.Value.GetType() == typeof(ResetInterruptState<TTrig, TName>) ||
+                         transition.Value.GetType() == typeof(HoldingGlobState<TTrig, TName>)))
                     {
                         continue;
                     }

@@ -19,6 +19,8 @@ namespace StateMachineLib
         private readonly List<ResetInterruptStateBuildArgs<TTrig, TName>> _resetIntStateArgs =
             new List<ResetInterruptStateBuildArgs<TTrig, TName>>();
 
+        private readonly List<HoldingGlobStateBuildArgs<TTrig, TName>> _holdingIntStateBuildArgs = 
+            new List<HoldingGlobStateBuildArgs<TTrig, TName>>();
 
         private readonly Dictionary<(TName stateName, TTrig triggerValue), TName> _transitions =
             new Dictionary<(TName, TTrig), TName>();
@@ -55,7 +57,7 @@ namespace StateMachineLib
                 var intState = new InterruptState<TTrig, TName>(_stateMachine, intStateArgs);
                 foreach (var state in _createdStates.Values)
                 {
-                    state.AddTransition(intStateArgs.TriggerValue, intState);
+                    state.AddTransition(intStateArgs.Trigger, intState);
                 }
             }
 
@@ -71,6 +73,16 @@ namespace StateMachineLib
                 }
             }
 
+
+            foreach (var arg in _holdingIntStateBuildArgs)
+            {
+                var holdingIntState = new HoldingGlobState<TTrig, TName>(_stateMachine, arg);
+                foreach (var state in _createdStates.Values)
+                {
+                    state.AddTransition(arg.Trigger, holdingIntState);
+                }
+            }
+
             return _stateMachine;
         }
 
@@ -81,7 +93,7 @@ namespace StateMachineLib
             {
                 StateAction = action,
                 StateName = stateName,
-                TriggerValue = triggerValue
+                Trigger = triggerValue
             });
             return this;
         }
@@ -108,7 +120,7 @@ namespace StateMachineLib
             {
                 AsyncStateAction = action,
                 StateName = stateName,
-                TriggerValue = triggerValue
+                Trigger = triggerValue
             });
             return this;
         }
@@ -127,6 +139,33 @@ namespace StateMachineLib
             return this;
         }
 
+
+        public StateMachineBuilder<TTrig, TName> HoldingGlobState(TTrig triggerValue, Action<TTrig> action,
+            TName stateName, TTrig returnTrigger)
+        {
+            _holdingIntStateBuildArgs.Add(new HoldingGlobStateBuildArgs<TTrig, TName>()
+            {
+                StateAction = action,
+                StateName = stateName,
+                Trigger = triggerValue,
+                ReturnTrigger = returnTrigger,
+            });
+            return this;
+        }
+
+
+        public StateMachineBuilder<TTrig, TName> AsyncHoldingGlobState(TTrig triggerValue, Func<TTrig, Task> action,
+            TName stateName, TTrig returnTrigger)
+        {
+            _holdingIntStateBuildArgs.Add(new HoldingGlobStateBuildArgs<TTrig, TName>()
+            {
+                AsyncStateAction = action,
+                StateName = stateName,
+                Trigger = triggerValue,
+                ReturnTrigger = returnTrigger,
+            });
+            return this;
+        }
 
         public class StateBuilder
         {
