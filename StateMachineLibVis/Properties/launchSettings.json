@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "StateMachineLibVis": {
+      "commandName": "Project",
+      "commandLineArgs": "-c graphViz -l 970"
+    }
+  }
+}

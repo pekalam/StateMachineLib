@@ -32,6 +32,7 @@ namespace StateMachineLib
 
         public void Start(string vizAppPath = null, string clientArgs = null)
         {
+            var task = _pipeServer.WaitForConnectionAsync();
             if (!string.IsNullOrEmpty(vizAppPath))
             {
                 if (!string.IsNullOrEmpty(clientArgs))
@@ -43,7 +44,7 @@ namespace StateMachineLib
                     Process.Start(vizAppPath);
                 }
             }
-            _pipeServer.WaitForConnection();
+            task.GetAwaiter().GetResult();
             _stateMachine.OnStateChanged += OnStateChanged;
             _sw = new StreamWriter(_pipeServer);
             _sw.AutoFlush = true;

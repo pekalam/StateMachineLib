@@ -17,10 +17,18 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="CommandLine.dll" />
-    <Content Include="StateMachineLibVis.dll" />
-    <Content Include="StateMachineLibVis.exe" />
-    <Content Include="StateMachineLibVis.runtimeconfig.json" />
+    <Content Include="CommandLine.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="StateMachineLibVis.dll">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="StateMachineLibVis.exe">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="StateMachineLibVis.runtimeconfig.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
   </ItemGroup>
 
   <ItemGroup>

@@ -9,6 +9,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Tests", "Tests\Tests.csproj
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "StateMachineLibVis", "StateMachineLibVis\StateMachineLibVis.csproj", "{F8616FF7-31C6-47F2-90EB-913E09CF3FF7}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TestApp", "TestApp", "{9D91FBB2-7CDC-4F1F-B752-96B200647EA8}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "VisTest", "VisTest\VisTest.csproj", "{9AB906B1-5BC4-452B-8C1C-E6A236A44FE0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -27,9 +31,16 @@ Global
 		{F8616FF7-31C6-47F2-90EB-913E09CF3FF7}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{F8616FF7-31C6-47F2-90EB-913E09CF3FF7}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{F8616FF7-31C6-47F2-90EB-913E09CF3FF7}.Release|Any CPU.Build.0 = Release|Any CPU
+		{9AB906B1-5BC4-452B-8C1C-E6A236A44FE0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{9AB906B1-5BC4-452B-8C1C-E6A236A44FE0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{9AB906B1-5BC4-452B-8C1C-E6A236A44FE0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{9AB906B1-5BC4-452B-8C1C-E6A236A44FE0}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{9AB906B1-5BC4-452B-8C1C-E6A236A44FE0} = {9D91FBB2-7CDC-4F1F-B752-96B200647EA8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {7241D83B-1FC8-44D0-A3F9-51F58EAAF1DF}
