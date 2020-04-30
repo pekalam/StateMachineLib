@@ -37,6 +37,16 @@ namespace StateMachineLib
             return OnEnterAsync?.Invoke(value);
         }
 
+        internal bool TryAddTransition(TTrig triggerValue, State<TTrig, TName> targetState)
+        {
+            if (_transitions.ContainsKey(triggerValue))
+            {
+                return false;
+            }
+            _transitions.Add(triggerValue, targetState);
+            return true;
+        }
+
         public void AddTransition(TTrig triggerValue, State<TTrig, TName> targetState)
         {
             _transitions.Add(triggerValue, targetState);

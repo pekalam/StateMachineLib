@@ -57,7 +57,10 @@ namespace StateMachineLib
                 var intState = new InterruptState<TTrig, TName>(_stateMachine, intStateArgs);
                 foreach (var state in _createdStates.Values)
                 {
-                    state.AddTransition(intStateArgs.Trigger, intState);
+                    if (!state.TryAddTransition(intStateArgs.Trigger, intState))
+                    {
+                        Console.WriteLine($"State {state.Name} transition with trigger {intStateArgs.Trigger} took precedence over interrupt state transition");
+                    }
                 }
             }
 
@@ -69,7 +72,10 @@ namespace StateMachineLib
                         .Select(kv => kv.Value).First());
                 foreach (var state in _createdStates.Values)
                 {
-                    state.AddTransition(arg.TriggerValue, resetIntState);
+                    if (!state.TryAddTransition(arg.TriggerValue, resetIntState))
+                    {
+                        Console.WriteLine($"State {state.Name} transition with trigger {arg.TriggerValue} took precedence over reset interrupt state transition");
+                    }
                 }
             }
 
@@ -79,7 +85,10 @@ namespace StateMachineLib
                 var holdingIntState = new HoldingGlobState<TTrig, TName>(_stateMachine, arg);
                 foreach (var state in _createdStates.Values)
                 {
-                    state.AddTransition(arg.Trigger, holdingIntState);
+                    if (!state.TryAddTransition(arg.Trigger, holdingIntState))
+                    {
+                        Console.WriteLine($"State {state.Name} transition with trigger {arg.Trigger} took precedence over holding glob state transition");
+                    }
                 }
             }
 

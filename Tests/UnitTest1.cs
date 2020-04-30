@@ -110,6 +110,14 @@ namespace Tests
             return b;
         }
 
+        public static StateMachineBuilder<TTrig, TName> InterruptTestState<TTrig, TName>(this StateMachineBuilder<TTrig, TName> builder, TTrig triggerValue,
+            TName stateName)
+        {
+            var b = builder.InterruptState(triggerValue, t => { TestOnEntry(t, stateName); }, stateName);
+
+            return b;
+        }
+
         public static StateMachineBuilder<TTrig, TName>.StateBuilder CreateTestAsyncState<TTrig, TName>(
             this StateMachineBuilder<TTrig, TName> builder,
             TName stateName, bool testExit = false)
@@ -338,6 +346,36 @@ namespace Tests
             TestStateMachineContext<TrigType, States>.GetStateTimesCalled(States.S3).ShouldBe(2);
 
             TestStateMachineContext<TrigType, States>.Result.ShouldBe("_ET2-ES1_T2-S2_T1-S1_ET2-ES1_T2-S2_T3-S3_T1-S3_T3-S1");
+        }
+
+
+        [Fact]
+        public async Task TransitionPrecedenceTest()
+        {
+            var sm = new StateMachineBuilder<TrigType, States>()
+                .CreateTestState(States.S1)
+                    .Transition(TrigType.T1, States.S2)
+                .End()
+
+                .InterruptTestState(TrigType.T1, States.INTER1)
+                
+                .CreateTestState(States.S2)
+                    .Loop(TrigType.T2)
+                    .Transition(TrigType.T3, States.S1)
+                .End()
+
+                .Build(States.S1);
+
+
+
+            sm.Next(TrigType.T1);
+            sm.Next(TrigType.T1);
+
+            sm.Next(TrigType.T3);
+            await sm.NextAsync(TrigType.T1);
+
+            TestStateMachineContext<TrigType, States>.GetStateTimesCalled(States.INTER1).ShouldBe(1);
+            TestStateMachineContext<TrigType, States>.Result.ShouldBe("_T1-S2_T1-INTER1_T3-S1_T1-S2");
         }
     }
 }
