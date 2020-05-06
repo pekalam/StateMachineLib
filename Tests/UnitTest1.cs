@@ -377,5 +377,69 @@ namespace Tests
             TestStateMachineContext<TrigType, States>.GetStateTimesCalled(States.INTER1).ShouldBe(1);
             TestStateMachineContext<TrigType, States>.Result.ShouldBe("_T1-S2_T1-INTER1_T3-S1_T1-S2");
         }
+
+        [Fact]
+        public void Exit_not_called_if_transition_not_found()
+        {
+            var sm = new StateMachineBuilder<TrigType, States>()
+                .CreateTestState(States.S1, true)
+                .Transition(TrigType.T1, States.S2)
+                .End()
+                .CreateTestState(States.S2, true)
+                .Transition(TrigType.T1, States.S1)
+                .End()
+
+                .Build(States.S1);
+
+            Assert.ThrowsAny<Exception>(() => sm.Next(TrigType.T3).ShouldBeNull());
+            TestStateMachineContext<TrigType, States>.Result.ShouldBe("");
+        }
+
+        [Fact]
+        public async Task IgnoringState()
+        {
+            var sm = new StateMachineBuilder<TrigType, States>()
+                .CreateTestState(States.S1, true)
+                .Transition(TrigType.T1, States.S2)
+                .Ignoring()
+                .End()
+
+                .CreateTestState(States.S2, true)
+                .Ignoring()
+                .End()
+
+                .InterruptTestState(TrigType.T2, States.INTER1)
+
+                .Build(States.S1);
+
+
+            sm.Next(TrigType.T3);
+            await sm.NextAsync(TrigType.T3);
+            TestStateMachineContext<TrigType, States>.Result.ShouldBe("");
+
+            sm.Next(TrigType.T1);
+
+            TestStateMachineContext<TrigType, States>.Result.ShouldBe("_ET1-ES1_T1-S2");
+
+            sm.Next(TrigType.T2);
+
+            TestStateMachineContext<TrigType, States>.Result.ShouldBe("_ET1-ES1_T1-S2_ET2-ES2_T2-INTER1");
+        }
+
+        [Fact]
+        public void Enter_exit_null_does_not_throw()
+        {
+            var sm = new StateMachineBuilder<TrigType, States>()
+                .CreateState(States.S3)
+                .Transition(TrigType.T1, States.S2)
+                .End()
+                .CreateState(States.S2)
+                .Transition(TrigType.T1, States.S3)
+                .End()
+                .Build(States.S3);
+
+            sm.NextAsync(TrigType.T1);
+            sm.Next(TrigType.T1);
+        }
     }
 }

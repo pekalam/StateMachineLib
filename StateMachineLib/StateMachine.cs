@@ -7,9 +7,9 @@ namespace StateMachineLib
     public class StateMachine<TTrig, TName> 
     {
         public State<TTrig, TName> CurrentState { get; private set; }
-        public State<TTrig, TName> PreviousState { get; private set; }
+        public State<TTrig, TName>? PreviousState { get; private set; }
 
-        public event Action<State<TTrig, TName>, State<TTrig, TName>> OnStateChanged;
+        public event Action<State<TTrig, TName>?, State<TTrig, TName>> OnStateChanged;
 
         internal StateMachine(State<TTrig, TName> startState, List<State<TTrig, TName>> allStates)
         {
@@ -23,19 +23,20 @@ namespace StateMachineLib
 
         public State<TTrig, TName>? Next(TTrig triggerValue)
         {
-            State<TTrig, TName>? nextState = null;
-            if(CurrentState.IsAsyncState)
-            {
-                nextState = CurrentState.NextAsync(triggerValue).ConfigureAwait(false).GetAwaiter().GetResult();
-            }
-            else
-            {
-                nextState = CurrentState.Next(triggerValue);
-            }
+            State<TTrig, TName>? nextState = CurrentState.Next(triggerValue);
 
             if (nextState == null)
             {
                 return null;
+            }
+
+            if (CurrentState.IsAsyncExit)
+            {
+                CurrentState.ExitAsync(triggerValue).ConfigureAwait(false).GetAwaiter().GetResult();
+            }
+            else
+            {
+                CurrentState.Exit(triggerValue);
             }
 
             PreviousState = CurrentState;
@@ -43,7 +44,7 @@ namespace StateMachineLib
             OnStateChanged?.Invoke(PreviousState, CurrentState);
 
 
-            if (CurrentState.IsAsyncState)
+            if (CurrentState.IsAsyncEnter)
             {
                 CurrentState.ActivateAsync(triggerValue).ConfigureAwait(false).GetAwaiter().GetResult();
             }
@@ -58,25 +59,26 @@ namespace StateMachineLib
 
         public async Task<State<TTrig, TName>?> NextAsync(TTrig triggerValue)
         {
-            State<TTrig, TName>? nextState = null;
-            if (CurrentState.IsAsyncState)
-            {
-                nextState = await CurrentState.NextAsync(triggerValue);
-            }
-            else
-            {
-                nextState = CurrentState.Next(triggerValue);
-            }
+            State<TTrig, TName>? nextState = CurrentState.Next(triggerValue);
 
             if (nextState == null)
             {
                 return null;
             }
 
+            if (CurrentState.IsAsyncExit)
+            {
+                await CurrentState.ExitAsync(triggerValue);
+            }
+            else
+            {
+                CurrentState.Exit(triggerValue);
+            }
+
             PreviousState = CurrentState;
             CurrentState = nextState;
             OnStateChanged?.Invoke(PreviousState, CurrentState);
-            if (CurrentState.IsAsyncState)
+            if (CurrentState.IsAsyncEnter)
             {
                 await CurrentState.ActivateAsync(triggerValue);
             }
