@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Threading.Tasks;
+#pragma warning disable 8618
 
 namespace StateMachineLib
 {

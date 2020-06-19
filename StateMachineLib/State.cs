@@ -1,24 +1,26 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+#pragma warning disable 8714
 
 namespace StateMachineLib
 {
     public class State<TTrig, TName>
     {
-        private State<TTrig, TName> _allTransition = null;
+        private State<TTrig, TName>? _allTransition;
         protected readonly Dictionary<TTrig, State<TTrig, TName>> _transitions = new Dictionary<TTrig, State<TTrig, TName>>();
         public bool IsAsyncEnter { get; private set; }
         public bool IsAsyncExit { get; private set; }
-        public event Action<TTrig> OnEnter;
+        public event Action<TTrig>? OnEnter;
         public event Action<TTrig>? OnExit;
-        public event Func<TTrig, Task> OnEnterAsync;
+        public event Func<TTrig, Task>? OnEnterAsync;
         public event Func<TTrig, Task>? OnExitAsync;
         public TName Name { get; internal set; }
         public bool Ignoring { get; internal set; }
 
-        internal State()
+        internal State(TName name)
         {
+            Name = name;
         }
 
         public IReadOnlyDictionary<TTrig, State<TTrig, TName>> Transitions => _transitions;
@@ -36,11 +38,7 @@ namespace StateMachineLib
 
         internal Task ActivateAsync(TTrig value)
         {
-            if (OnEnterAsync == null)
-            {
-                return Task.CompletedTask;
-            }
-            return OnEnterAsync?.Invoke(value);
+            return OnEnterAsync == null ? Task.CompletedTask : OnEnterAsync.Invoke(value);
         }
 
         internal void Exit(TTrig value)
@@ -50,11 +48,7 @@ namespace StateMachineLib
 
         internal Task ExitAsync(TTrig value)
         {
-            if (OnExitAsync == null)
-            {
-                return Task.CompletedTask;
-            }
-            return OnExitAsync?.Invoke(value);
+            return OnExitAsync == null ? Task.CompletedTask : OnExitAsync.Invoke(value);
         }
 
         public bool TryAddTransition(TTrig triggerValue, State<TTrig, TName> targetState)
@@ -92,7 +86,7 @@ namespace StateMachineLib
                     return null;
                 }
                 throw new KeyNotFoundException(
-                    $"Cannot find tranistion with key {trigValue} from current state {Name}");
+                    $"Cannot find transition with key {trigValue} from current state {Name}");
             }
 
             return state;

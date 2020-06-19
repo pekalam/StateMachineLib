@@ -2,13 +2,14 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
+#pragma warning disable 8714
 
 namespace StateMachineLib
 {
     public class StateMachineBuilder<TTrig, TName>
     {
-        private StateMachine<TTrig, TName> _stateMachine;
-        private StateBuilder _currentStateBuilder;
+        private StateMachine<TTrig, TName>? _stateMachine;
+        private StateBuilder? _currentStateBuilder;
 
         private readonly Dictionary<TName, State<TTrig, TName>> _createdStates =
             new Dictionary<TName, State<TTrig, TName>>();
@@ -33,7 +34,7 @@ namespace StateMachineLib
             return _currentStateBuilder;
         }
 
-        public StateMachine<TTrig, TName> Build(TName startStateName)
+        public StateMachine<TTrig, TName> Build(TName startStateName, string? name = null)
         {
             foreach (var (tuple, targetStateName) in _transitions)
             {
@@ -49,7 +50,7 @@ namespace StateMachineLib
             }
 
             _stateMachine =
-                new StateMachine<TTrig, TName>(_createdStates[startStateName], _createdStates.Values.ToList());
+                new StateMachine<TTrig, TName>(_createdStates[startStateName], _createdStates.Values.ToList(), name);
 
 
             foreach (var intStateArgs in _intStateArgs)
@@ -68,7 +69,7 @@ namespace StateMachineLib
             {
                 var resetIntState = new ResetInterruptState<TTrig, TName>(_stateMachine, arg,
                     _createdStates
-                        .Where(kv => kv.Key.Equals(arg.ResetStateName))
+                        .Where(kv => kv.Key != null && kv.Key.Equals(arg.ResetStateName))
                         .Select(kv => kv.Value).First());
                 foreach (var state in _createdStates.Values)
                 {
@@ -179,12 +180,12 @@ namespace StateMachineLib
         public class StateBuilder
         {
             private readonly StateMachineBuilder<TTrig, TName> _parentBuilder;
-            private readonly State<TTrig, TName> _state = new State<TTrig, TName>();
+            private readonly State<TTrig, TName> _state;
 
             public StateBuilder(StateMachineBuilder<TTrig, TName> parentBuilder, TName name)
             {
+                _state = new State<TTrig, TName>(name);
                 _parentBuilder = parentBuilder;
-                _state.Name = name;
                 _parentBuilder._createdStates.Add(name, _state);
             }
 

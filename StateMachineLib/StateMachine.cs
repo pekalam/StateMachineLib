@@ -9,14 +9,16 @@ namespace StateMachineLib
         public State<TTrig, TName> CurrentState { get; private set; }
         public State<TTrig, TName>? PreviousState { get; private set; }
 
-        public event Action<State<TTrig, TName>?, State<TTrig, TName>> OnStateChanged;
+        public event Action<State<TTrig, TName>?, State<TTrig, TName>, TTrig>? OnStateChanged;
 
-        internal StateMachine(State<TTrig, TName> startState, List<State<TTrig, TName>> allStates)
+        public event Action<State<TTrig, TName>?, State<TTrig, TName>>? OnStateSet;
+        
+        internal StateMachine(State<TTrig, TName> startState, List<State<TTrig, TName>> allStates, string? name)
         {
             CurrentState = startState;
             PreviousState = null;
-            OnStateChanged?.Invoke(PreviousState, CurrentState);
-            StateMachineInfo = new StateMachineInfo<TTrig, TName>(allStates, startState);
+            OnStateSet?.Invoke(PreviousState, CurrentState);
+            StateMachineInfo = new StateMachineInfo<TTrig, TName>(allStates, startState, name);
         }
 
         public StateMachineInfo<TTrig, TName> StateMachineInfo { get; }
@@ -41,7 +43,7 @@ namespace StateMachineLib
 
             PreviousState = CurrentState;
             CurrentState = nextState;
-            OnStateChanged?.Invoke(PreviousState, CurrentState);
+            OnStateChanged?.Invoke(PreviousState, CurrentState, triggerValue);
 
 
             if (CurrentState.IsAsyncEnter)
@@ -77,7 +79,7 @@ namespace StateMachineLib
 
             PreviousState = CurrentState;
             CurrentState = nextState;
-            OnStateChanged?.Invoke(PreviousState, CurrentState);
+            OnStateChanged?.Invoke(PreviousState, CurrentState, triggerValue);
             if (CurrentState.IsAsyncEnter)
             {
                 await CurrentState.ActivateAsync(triggerValue);
@@ -93,7 +95,7 @@ namespace StateMachineLib
         {
             PreviousState = CurrentState;
             CurrentState = state;
-            OnStateChanged?.Invoke(PreviousState, CurrentState);
+            OnStateSet?.Invoke(PreviousState, CurrentState);
         }
     }
 }

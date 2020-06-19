@@ -6,11 +6,14 @@ namespace StateMachineLib
     {
         public IReadOnlyList<State<TTrig, TName>> States { get; }
         public State<TTrig, TName> StartState { get; }
-
-        public StateMachineInfo(IReadOnlyList<State<TTrig, TName>> states, State<TTrig, TName> startState)
+        
+        public string? Name { get; }
+        
+        public StateMachineInfo(IReadOnlyList<State<TTrig, TName>> states, State<TTrig, TName> startState, string? name)
         {
             States = states;
             StartState = startState;
+            Name = name;
         }
     }
 }

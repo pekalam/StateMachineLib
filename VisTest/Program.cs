@@ -25,10 +25,12 @@ namespace VisTest
                 .CreateState(State.S3)
                 .Transition(Trig.T2, State.S1)
                 .End()
-                .Build(State.S1);
+                .Build(State.S1, "example");
 
-            var vis = new StateMachineVis<Trig, State>(sm, pipeName: "graphVizTest");
+            var vis = new StateMachineVis<Trig, State>(sm, name: "graphVizTest");
             vis.Start("StateMachineLibVis.exe", clientArgs: "-c graphVizTest");
+
+            var logging = new StateMachineLogging<Trig, State>(sm);
 
             var cts = new CancellationTokenSource();
             Task.Run(async () =>
@@ -53,6 +55,7 @@ namespace VisTest
 
 
             Console.ReadKey();
+            vis.Stop();
             cts.Cancel();
         }
     }

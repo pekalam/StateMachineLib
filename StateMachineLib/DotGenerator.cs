@@ -1,4 +1,6 @@
-﻿namespace StateMachineLib
+﻿using System;
+
+namespace StateMachineLib
 {
     class DotGenerator<TTrig, TName>
     {
@@ -11,6 +13,11 @@
 
         private static string GetTransitionStr(State<TTrig, TName> source, TTrig trigger, State<TTrig, TName> target)
         {
+            if (trigger == null)
+            {
+                throw new NullReferenceException("Null trigger - cannot create transition string");
+            }
+            
             var label = $"[style=\"solid\", label=\"{trigger.ToString()}\"]";
 
             var transition = $"{source.Name} -> {target.Name} {label};\n";

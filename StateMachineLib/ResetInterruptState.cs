@@ -6,13 +6,12 @@ namespace StateMachineLib
     class ResetInterruptState<TTrig, TName> : State<TTrig, TName>
     {
         private readonly StateMachine<TTrig, TName> _stateMachine;
-        private readonly Action<TTrig> _action;
-        private readonly Func<TTrig, Task> _asyncAction;
+        private readonly Action<TTrig>? _action;
+        private readonly Func<TTrig, Task>? _asyncAction;
         private readonly State<TTrig, TName> _resetState;
 
-        public ResetInterruptState(StateMachine<TTrig, TName> stateMachine, ResetInterruptStateBuildArgs<TTrig, TName> args, State<TTrig, TName> resetState)
+        public ResetInterruptState(StateMachine<TTrig, TName> stateMachine, ResetInterruptStateBuildArgs<TTrig, TName> args, State<TTrig, TName> resetState) : base(args.StateName)
         {
-            Name = args.StateName;
             _stateMachine = stateMachine;
             _resetState = resetState;
 
@@ -32,12 +31,16 @@ namespace StateMachineLib
 
         private async Task OnAsyncInterruptStateEnter(TTrig arg)
         {
+            if (_asyncAction == null) throw new NullReferenceException("Null state async action");
+            
             await _asyncAction.Invoke(arg);
             _stateMachine.Restore(_resetState);
         }
 
         private void OnInterruptStateEnter(TTrig triggerValue)
         {
+            if (_action == null) throw new NullReferenceException("Null state action");
+
             _action.Invoke(triggerValue);
             _stateMachine.Restore(_resetState);
         }
