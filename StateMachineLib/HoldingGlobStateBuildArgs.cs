@@ -8,8 +8,8 @@ namespace StateMachineLib
     {
         public TName StateName { get; set; }
         public TTrig Trigger { get; set; }
-        public Action<TTrig>? StateAction { get; set; }
-        public Func<TTrig, Task>? AsyncStateAction { get; set; }
+        public Action<StateEnterArgs<TTrig, TName>>? StateAction { get; set; }
+        public Func<StateEnterArgs<TTrig, TName>, Task>? AsyncStateAction { get; set; }
         public TTrig ReturnTrigger { get; set; }
     }
 }

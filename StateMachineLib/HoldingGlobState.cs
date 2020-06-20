@@ -7,8 +7,8 @@ namespace StateMachineLib
     class HoldingGlobState<TTrig, TName> : State<TTrig, TName>
     {
         private readonly StateMachine<TTrig, TName> _stateMachine;
-        private readonly Action<TTrig>? _action;
-        private readonly Func<TTrig, Task>? _asyncAction;
+        private readonly Action<StateEnterArgs<TTrig, TName>>? _action;
+        private readonly Func<StateEnterArgs<TTrig, TName>, Task>? _asyncAction;
         private readonly TTrig _returnTrig;
 
         public HoldingGlobState(StateMachine<TTrig, TName> stateMachine, HoldingGlobStateBuildArgs<TTrig, TName> args) : base(args.StateName)
@@ -31,7 +31,7 @@ namespace StateMachineLib
             OnBuild();
         }
 
-        private async Task OnAsyncInterruptStateEnter(TTrig arg)
+        private async Task OnAsyncInterruptStateEnter(StateEnterArgs<TTrig, TName> arg)
         {
             if (_asyncAction == null) throw new NullReferenceException("Null state async action");
             if (_stateMachine.PreviousState == null) throw new Exception("Previous state cannot be null");
@@ -41,7 +41,7 @@ namespace StateMachineLib
             await _asyncAction.Invoke(arg);
         }
 
-        private void OnInterruptStateEnter(TTrig triggerValue)
+        private void OnInterruptStateEnter(StateEnterArgs<TTrig, TName> triggerValue)
         {
             if (_action == null) throw new NullReferenceException("Null state action");
             if (_stateMachine.PreviousState == null) throw new Exception("Previous state cannot be null");

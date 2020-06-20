@@ -55,6 +55,7 @@ namespace StateMachineLib
         private readonly string _name;
         private bool _vizAppStarted;
         private List<Task> _activeTasks = new List<Task>();
+        private object _listLck = new object();
 
         public StateMachineVis(StateMachine<TTrig, TName> stateMachine, string name = "graphViz")
         {
@@ -134,7 +135,13 @@ namespace StateMachineLib
                     });
                     _activeTasks.Add(task);
                     task.Start();
-                    task.ContinueWith(t => _activeTasks.Remove(t));
+                    task.ContinueWith(t =>
+                    {
+                        lock (_listLck)
+                        {
+                            _activeTasks.Remove(t);
+                        }
+                    });
                 }
             }
            

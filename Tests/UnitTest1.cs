@@ -101,10 +101,10 @@ namespace Tests
             TName stateName, bool testExit = false) 
         {
             var b = builder.CreateState(stateName)
-                .Enter((t) => TestOnEntry(t, stateName));
+                .Enter(t => TestOnEntry(t.Trigger, stateName));
             if (testExit)
             {
-                b.Exit(trig => TestOnExit(trig, stateName));
+                b.Exit(t => TestOnExit(t.Trigger, stateName));
             }
 
             return b;
@@ -113,7 +113,7 @@ namespace Tests
         public static StateMachineBuilder<TTrig, TName> InterruptTestState<TTrig, TName>(this StateMachineBuilder<TTrig, TName> builder, TTrig triggerValue,
             TName stateName)
         {
-            var b = builder.InterruptState(triggerValue, t => { TestOnEntry(t, stateName); }, stateName);
+            var b = builder.InterruptState(triggerValue, t => TestOnEntry(t.Trigger, stateName), stateName);
 
             return b;
         }
@@ -125,15 +125,15 @@ namespace Tests
             var b = builder.CreateState(stateName)
                 .EnterAsync((t) =>
                 {
-                    TestOnEntry(t, stateName);
+                    TestOnEntry(t.Trigger, stateName);
                     return Task.CompletedTask;
                 });
 
             if (testExit)
             {
-                b.ExitAsync(trig =>
+                b.ExitAsync(t =>
                 {
-                    TestOnExit(trig, stateName);
+                    TestOnExit(t.Trigger, stateName);
                     return Task.CompletedTask;
                 });
             }
@@ -152,7 +152,7 @@ namespace Tests
 
     enum States
     {
-        S1,S2, RESETINTER1, S3, RESETINTER2, INTER1, INTER2
+        S0,S1,S2, RESETINTER1, S3, RESETINTER2, INTER1, INTER2,S4,S5,S6
     }
 
     public class UnitTest1
@@ -440,6 +440,140 @@ namespace Tests
 
             sm.NextAsync(TrigType.T1);
             sm.Next(TrigType.T1);
+        }
+
+        [Fact]
+        public void Next_called_on_context_enters_next_state_after_current_finished()
+        {
+            bool s1Called = false;
+            bool s2Called = false;
+            bool s3Called = false;
+            bool s4Called = false;
+
+
+            var sm = new StateMachineBuilder<TrigType, States>()
+                .CreateState(States.S0)
+                    .Transition(TrigType.T1, States.S1)
+                .End()
+                    .CreateState(States.S1)
+                        .Enter(args =>
+                    {
+                        args.Context.Next(TrigType.T1);
+                        s1Called = true;
+                    })
+                    .Transition(TrigType.T1, States.S2)
+                .End()
+                    .CreateState(States.S2)
+                        .Enter(args =>
+                    {
+                        args.Context.NextAsync(TrigType.T2);
+                        s2Called = true;
+                    })
+                    .Transition(TrigType.T2, States.S3)
+                .End()
+                .CreateState(States.S3)
+                    .EnterAsync(args => { s3Called = true; return Task.CompletedTask; })
+                    .Transition(TrigType.T2, States.S4)
+                .End()
+                .CreateState(States.S4)
+                    .Enter(args => s4Called=true)
+                .End()
+                .Build(States.S0);
+
+
+            var current = sm.Next(TrigType.T1);
+
+            current.Name.ShouldBe(States.S3);
+            s1Called.ShouldBeTrue();
+            s2Called.ShouldBeTrue();
+            s3Called.ShouldBeTrue();
+            s4Called.ShouldBeFalse();
+
+
+            //context clear test
+            current = sm.Next(TrigType.T2);
+            current.Name.ShouldBe(States.S4);
+            s4Called.ShouldBeTrue();
+        }
+
+
+
+
+        [Fact]
+        public async Task Next_async_called_on_context_enters_next_state_after_current_finished()
+        {
+            bool s1Called = false;
+            bool s2Called = false;
+            bool s3Called = false;
+            bool s4Called = false;
+
+
+            var sm = new StateMachineBuilder<TrigType, States>()
+                .CreateState(States.S0)
+                    .Transition(TrigType.T1, States.S1)
+                .End()
+                .CreateState(States.S1)
+                    .EnterAsync(args =>
+                    {
+                        args.Context.Next(TrigType.T1);
+                        s1Called = true;
+                        return Task.CompletedTask;
+                    })
+                    .Transition(TrigType.T1, States.S2)
+                .End()
+                .CreateState(States.S2)
+                    .Enter(args =>
+                    {
+                        args.Context.NextAsync(TrigType.T2);
+                        s2Called = true;
+                    })
+                    .Transition(TrigType.T2, States.S3)
+                .End()
+                .CreateState(States.S3)
+                    .EnterAsync(args => { s3Called = true; return Task.CompletedTask; })
+                    .Transition(TrigType.T2, States.S4)
+                .End()
+                .CreateState(States.S4)
+                    .EnterAsync(args =>
+                {
+                    s4Called = true;
+                    return Task.CompletedTask;
+                })
+                .End()
+                .Build(States.S0);
+
+
+            var current =  await sm.NextAsync(TrigType.T1);
+
+            current?.Name.ShouldBe(States.S3);
+            s1Called.ShouldBeTrue();
+            s2Called.ShouldBeTrue();
+            s3Called.ShouldBeTrue();
+            s4Called.ShouldBeFalse();
+
+
+            //context clear test
+            current = await sm.NextAsync(TrigType.T2);
+            current?.Name.ShouldBe(States.S4);
+            s4Called.ShouldBeTrue();
+        }
+
+
+        [Fact]
+        public void Loop_does_not_call_exit()
+        {
+            var sm = new StateMachineBuilder<TrigType, States>()
+                .CreateTestState(States.S0)
+                .Loop(TrigType.T1)
+                .End()
+                .Build(States.S0);
+
+
+            sm.Next(TrigType.T1);
+            sm.Next(TrigType.T1);
+            sm.Next(TrigType.T1);
+
+            TestStateMachineContext<TrigType, States>.Result.ShouldBe("_T1-S0_T1-S0_T1-S0");
         }
     }
 }

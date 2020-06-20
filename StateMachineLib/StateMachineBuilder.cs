@@ -6,12 +6,41 @@ using System.Threading.Tasks;
 
 namespace StateMachineLib
 {
-    public class StateMachineBuilder<TTrig, TName>
+    public class LockingStateMachineBuilder<TTrig, TName> : StateMachineBuilderBase<TTrig, TName, LockingStateMachineBuilder<TTrig, TName>, LockingStateMachine<TTrig, TName>>
     {
-        private StateMachine<TTrig, TName>? _stateMachine;
-        private StateBuilder? _currentStateBuilder;
+        public LockingStateMachineBuilder()
+        {
+            _builder = this;
+        }
 
-        private readonly Dictionary<TName, State<TTrig, TName>> _createdStates =
+        protected override LockingStateMachine<TTrig, TName> CreateStateMachine(State<TTrig, TName> start, List<State<TTrig, TName>> states, string? name)
+        {
+            return new LockingStateMachine<TTrig, TName>(start, states, name);
+        }
+    }
+
+    public class StateMachineBuilder<TTrig, TName> : StateMachineBuilderBase<TTrig, TName, StateMachineBuilder<TTrig, TName>, StateMachine<TTrig, TName>>
+    {
+        public StateMachineBuilder()
+        {
+            _builder = this;
+        }
+
+        protected override StateMachine<TTrig, TName> CreateStateMachine(State<TTrig, TName> start, List<State<TTrig, TName>> states, string? name)
+        {
+            return new StateMachine<TTrig, TName>(start, states, name);
+        }
+    }
+
+
+    public abstract class StateMachineBuilderBase<TTrig, TName, TBuilder, TSm> where TBuilder : StateMachineBuilderBase<TTrig, TName, TBuilder, TSm>
+    where TSm : StateMachine<TTrig, TName>
+    {
+        private StateBuilder? _currentStateBuilder;
+        protected TSm? _stateMachine;
+        protected TBuilder _builder { private get; set; }
+
+        protected readonly Dictionary<TName, State<TTrig, TName>> _createdStates =
             new Dictionary<TName, State<TTrig, TName>>();
 
         private readonly List<InterruptStateBuildArgs<TTrig, TName>> _intStateArgs =
@@ -30,11 +59,11 @@ namespace StateMachineLib
 
         public StateBuilder CreateState(TName name)
         {
-            _currentStateBuilder = new StateBuilder(this, name);
+            _currentStateBuilder = new StateBuilder(_builder, name);
             return _currentStateBuilder;
         }
 
-        public StateMachine<TTrig, TName> Build(TName startStateName, string? name = null)
+        protected void InternalBuild()
         {
             foreach (var (tuple, targetStateName) in _transitions)
             {
@@ -48,11 +77,7 @@ namespace StateMachineLib
                 var targetState = _createdStates[targetAll];
                 state.AddAllTransition(targetState);
             }
-
-            _stateMachine =
-                new StateMachine<TTrig, TName>(_createdStates[startStateName], _createdStates.Values.ToList(), name);
-
-
+            
             foreach (var intStateArgs in _intStateArgs)
             {
                 var intState = new InterruptState<TTrig, TName>(_stateMachine, intStateArgs);
@@ -92,11 +117,19 @@ namespace StateMachineLib
                     }
                 }
             }
+        }
 
+        protected abstract TSm CreateStateMachine(State<TTrig, TName> start,
+            List<State<TTrig, TName>> states, string? name);
+
+        public TSm Build(TName startStateName, string? name = null)
+        {
+            _stateMachine = CreateStateMachine(_createdStates[startStateName], _createdStates.Values.ToList(), name);
+            InternalBuild();
             return _stateMachine;
         }
 
-        public StateMachineBuilder<TTrig, TName> InterruptState(TTrig triggerValue, Action<TTrig> action,
+        public TBuilder InterruptState(TTrig triggerValue, Action<StateEnterArgs<TTrig, TName>> action,
             TName stateName)
         {
             _intStateArgs.Add(new InterruptStateBuildArgs<TTrig, TName>()
@@ -105,11 +138,11 @@ namespace StateMachineLib
                 StateName = stateName,
                 Trigger = triggerValue
             });
-            return this;
+            return _builder;
         }
 
 
-        public StateMachineBuilder<TTrig, TName> ResetInterruptState(TTrig triggerValue, Action<TTrig> action,
+        public TBuilder ResetInterruptState(TTrig triggerValue, Action<StateEnterArgs<TTrig, TName>> action,
             TName stateName, TName resetState)
         {
             _resetIntStateArgs.Add(new ResetInterruptStateBuildArgs<TTrig, TName>()
@@ -119,11 +152,11 @@ namespace StateMachineLib
                 TriggerValue = triggerValue,
                 ResetStateName = resetState,
             });
-            return this;
+            return _builder;
         }
 
 
-        public StateMachineBuilder<TTrig, TName> AsyncInterruptState(TTrig triggerValue, Func<TTrig, Task> action,
+        public TBuilder AsyncInterruptState(TTrig triggerValue, Func<StateEnterArgs<TTrig, TName>, Task> action,
             TName stateName)
         {
             _intStateArgs.Add(new InterruptStateBuildArgs<TTrig, TName>()
@@ -132,11 +165,11 @@ namespace StateMachineLib
                 StateName = stateName,
                 Trigger = triggerValue
             });
-            return this;
+            return _builder;
         }
 
 
-        public StateMachineBuilder<TTrig, TName> AsyncResetInterruptState(TTrig triggerValue, Func<TTrig, Task> action,
+        public TBuilder AsyncResetInterruptState(TTrig triggerValue, Func<StateEnterArgs<TTrig, TName>, Task> action,
             TName stateName, TName resetState)
         {
             _resetIntStateArgs.Add(new ResetInterruptStateBuildArgs<TTrig, TName>()
@@ -146,11 +179,11 @@ namespace StateMachineLib
                 TriggerValue = triggerValue,
                 ResetStateName = resetState,
             });
-            return this;
+            return _builder;
         }
 
 
-        public StateMachineBuilder<TTrig, TName> HoldingGlobState(TTrig triggerValue, Action<TTrig> action,
+        public TBuilder HoldingGlobState(TTrig triggerValue, Action<StateEnterArgs<TTrig, TName>> action,
             TName stateName, TTrig returnTrigger)
         {
             _holdingIntStateBuildArgs.Add(new HoldingGlobStateBuildArgs<TTrig, TName>()
@@ -160,11 +193,11 @@ namespace StateMachineLib
                 Trigger = triggerValue,
                 ReturnTrigger = returnTrigger,
             });
-            return this;
+            return _builder;
         }
 
 
-        public StateMachineBuilder<TTrig, TName> AsyncHoldingGlobState(TTrig triggerValue, Func<TTrig, Task> action,
+        public TBuilder AsyncHoldingGlobState(TTrig triggerValue, Func<StateEnterArgs<TTrig, TName>, Task> action,
             TName stateName, TTrig returnTrigger)
         {
             _holdingIntStateBuildArgs.Add(new HoldingGlobStateBuildArgs<TTrig, TName>()
@@ -174,42 +207,48 @@ namespace StateMachineLib
                 Trigger = triggerValue,
                 ReturnTrigger = returnTrigger,
             });
-            return this;
+            return _builder;
         }
 
         public class StateBuilder
         {
-            private readonly StateMachineBuilder<TTrig, TName> _parentBuilder;
+            private readonly TBuilder _parentBuilder;
             private readonly State<TTrig, TName> _state;
 
-            public StateBuilder(StateMachineBuilder<TTrig, TName> parentBuilder, TName name)
+            public StateBuilder(TBuilder parentBuilder, TName name)
             {
                 _state = new State<TTrig, TName>(name);
                 _parentBuilder = parentBuilder;
                 _parentBuilder._createdStates.Add(name, _state);
             }
 
-            public StateBuilder Enter(Action<TTrig> action)
+            public StateBuilder Enter(Action<StateEnterArgs<TTrig, TName>> action)
             {
                 _state.OnEnter += action;
                 return this;
             }
 
-            public StateBuilder EnterAsync(Func<TTrig, Task> action)
+            public StateBuilder EnterAsync(Func<StateEnterArgs<TTrig, TName>, Task> action)
             {
                 _state.OnEnterAsync += action;
                 return this;
             }
 
-            public StateBuilder Exit(Action<TTrig> action)
+            public StateBuilder Exit(Action<StateExitArgs<TTrig, TName>> action)
             {
                 _state.OnExit += action;
                 return this;
             }
 
-            public StateBuilder ExitAsync(Func<TTrig, Task> action)
+            public StateBuilder ExitAsync(Func<StateExitArgs<TTrig, TName>, Task> action)
             {
                 _state.OnExitAsync += action;
+                return this;
+            }
+
+            public StateBuilder CanExit(Func<TTrig, State<TTrig, TName>?, bool> action)
+            {
+                _state.CanExit = action;
                 return this;
             }
 
@@ -235,7 +274,7 @@ namespace StateMachineLib
 
             public StateBuilder Loop(TTrig triggerValue) => Transition(triggerValue, _state.Name);
 
-            public StateMachineBuilder<TTrig, TName> End()
+            public TBuilder End()
             {
                 _state.OnBuild();
                 return _parentBuilder;
