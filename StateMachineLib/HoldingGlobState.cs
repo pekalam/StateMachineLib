@@ -38,7 +38,7 @@ namespace StateMachineLib
 
             _transitions.Remove(_returnTrig);
             AddTransition(_returnTrig, _stateMachine.PreviousState);
-            await _asyncAction.Invoke(arg);
+            await _asyncAction.Invoke(arg).ConfigureAwait(false);
         }
 
         private void OnInterruptStateEnter(StateEnterArgs<TTrig, TName> triggerValue)

@@ -33,7 +33,7 @@ namespace StateMachineLib
             if (_asyncAction == null) throw new NullReferenceException("Null state async action");
             if (_stateMachine.PreviousState == null) throw new Exception("Previous state cannot be null");
 
-            await _asyncAction.Invoke(arg);
+            await _asyncAction.Invoke(arg).ConfigureAwait(false);
             _stateMachine.Restore(_stateMachine.PreviousState);
         }
 

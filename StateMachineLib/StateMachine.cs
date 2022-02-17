@@ -66,7 +66,7 @@ namespace StateMachineLib
 
                 if (CurrentState.IsAsyncExit)
                 {
-                    CurrentState.ExitAsync(exitArgs).ConfigureAwait(false).GetAwaiter().GetResult();
+                    CurrentState.ExitAsync(exitArgs).GetAwaiter().GetResult();
                 }
                 else
                 {
@@ -82,7 +82,7 @@ namespace StateMachineLib
 
             if (CurrentState.IsAsyncEnter)
             {
-                CurrentState.ActivateAsync(enterArgs).ConfigureAwait(false).GetAwaiter().GetResult();
+                CurrentState.ActivateAsync(enterArgs).GetAwaiter().GetResult();
             }
             else
             {
@@ -94,7 +94,7 @@ namespace StateMachineLib
             {
                 var next = _context.NextTriggers[i];
                 _context.NextTriggers.RemoveAt(i);
-                if (next.isAsync) toReturn = NextAsync(next.trig).ConfigureAwait(false).GetAwaiter().GetResult();
+                if (next.isAsync) toReturn = NextAsync(next.trig).GetAwaiter().GetResult();
                 else toReturn = Next(next.trig);
             }
 
@@ -130,7 +130,7 @@ namespace StateMachineLib
 
                 if (CurrentState.IsAsyncExit)
                 {
-                    await CurrentState.ExitAsync(exitArgs);
+                    await CurrentState.ExitAsync(exitArgs).ConfigureAwait(false);
                 }
                 else
                 {
@@ -144,7 +144,7 @@ namespace StateMachineLib
             OnStateChanged?.Invoke(PreviousState, CurrentState, triggerValue);
             if (CurrentState.IsAsyncEnter)
             {
-                await CurrentState.ActivateAsync(enterArgs);
+                await CurrentState.ActivateAsync(enterArgs).ConfigureAwait(false);
             }
             else
             {
@@ -157,7 +157,7 @@ namespace StateMachineLib
             {
                 var next = _context.NextTriggers[i];
                 _context.NextTriggers.RemoveAt(i);
-                if (next.isAsync) toReturn = await NextAsync(next.trig);
+                if (next.isAsync) toReturn = await NextAsync(next.trig).ConfigureAwait(false);
                 else toReturn = Next(next.trig);
             }
 

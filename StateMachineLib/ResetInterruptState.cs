@@ -33,7 +33,7 @@ namespace StateMachineLib
         {
             if (_asyncAction == null) throw new NullReferenceException("Null state async action");
             
-            await _asyncAction.Invoke(arg);
+            await _asyncAction.Invoke(arg).ConfigureAwait(false);
             _stateMachine.Restore(_resetState);
         }
 

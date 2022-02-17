@@ -32,8 +32,17 @@ namespace StateMachineLib
         public bool IsAsyncExit { get; private set; }
         public event Action<StateEnterArgs<TTrig, TName>>? OnEnter;
         public event Action<StateExitArgs<TTrig, TName>>? OnExit;
+        /// <summary>
+        /// Warning: assigning multiple delegates to this delegate is not currently supported
+        /// </summary>
         public Func<TTrig, State<TTrig, TName>?, bool>? CanExit;
+        /// <summary>
+        /// Warning: assigning multiple delegates to this delegate is not currently supported
+        /// </summary>
         public Func<StateEnterArgs<TTrig, TName>, Task>? OnEnterAsync;
+        /// <summary>
+        /// Warning: assigning multiple delegates to this delegate is not currently supported
+        /// </summary>
         public Func<StateExitArgs<TTrig, TName>, Task>? OnExitAsync;
         public TName Name { get; internal set; }
         public bool Ignoring { get; internal set; }
